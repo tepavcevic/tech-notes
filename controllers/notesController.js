@@ -31,12 +31,12 @@ const createNewNote = asyncHandler(async (req, res) => {
         return res.status(400).json({ message: 'All fields are required' });
     }
 
-    const duplicate = await Note.findOne({ title }).lean().exec();
+    const duplicate = await Note.findOne({ title }).collation({ locale: 'en', strength: 2 }).lean().exec();
 
     if (duplicate) {
         return res.status(409).json({ message: 'Duplicate note title' });
     }
-    //using insertMany because create ends up buffering
+    //using insertMany because create ends up buffering for some reason
     const note = await Note.insertMany({ user, title, text });
 
     if (note) {
@@ -58,13 +58,13 @@ const updateNote = asyncHandler(async (req, res) => {
     }
 
     const note = await Note.findById(id).exec();
-    if (!user) {
+    if (!note) {
         return res.status(400).json({ message: "Note not found." });
     }
 
-    const duplicate = await User.findOne({ title }).lean().exec();
+    const duplicate = await Note.findOne({ title }).collation({ locale: 'en', strength: 2 }).lean().exec();
     if (duplicate && duplicate?._id.toString() !== id) {
-        return res.status(409).json({ message: "Duplicate username" });
+        return res.status(409).json({ message: "Duplicate note title" });
     }
 
     note.user = user;
