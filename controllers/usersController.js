@@ -23,8 +23,6 @@ const getAllUsers = asyncHandler(async (req, res) => {
 const createNewUser = asyncHandler(async (req, res) => {
     const { username, password, roles } = req?.body;
 
-    console.log(req.body);
-
     if (!username || !password) {
         return res.status(400).json({ message: "Username and password are required." });
     }
