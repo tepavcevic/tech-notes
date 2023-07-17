@@ -36,8 +36,8 @@ const createNewNote = asyncHandler(async (req, res) => {
     if (duplicate) {
         return res.status(409).json({ message: 'Duplicate note title' });
     }
-    //using insertMany because create ends up buffering for some reason
-    const note = await Note.insertMany({ user, title, text });
+
+    const note = await Note.create({ user, title, text });
 
     if (note) {
         return res.status(201).json({ message: 'New note created' });
