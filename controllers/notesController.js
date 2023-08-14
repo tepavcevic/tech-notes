@@ -1,6 +1,7 @@
 const asyncHandler = require('express-async-handler');
 
 const User = require('../models/User');
+const Client = require('../models/Client');
 const Note = require('../models/Note');
 
 // @desc Get all notes
@@ -15,7 +16,8 @@ const getAllNotes = asyncHandler(async (req, res) => {
 
     const notesWithUser = await Promise.all(notes.map(async note => {
         const user = await User.findById(note.user).lean().exec();
-        return { ...note, username: user.username };
+        const client = await Client.findById(note.client).lean().exec();
+        return { ...note, username: user.username, client };
     }))
 
     res.json(notesWithUser);
@@ -25,9 +27,9 @@ const getAllNotes = asyncHandler(async (req, res) => {
 // @route POST /notes
 // @access Private
 const createNewNote = asyncHandler(async (req, res) => {
-    const { user, title, text } = req?.body;
+    const { user, title, text, client } = req?.body;
 
-    if (!user || !title || !text) {
+    if (!user || !title || !text || !client) {
         return res.status(400).json({ message: 'All fields are required' });
     }
 
@@ -37,7 +39,7 @@ const createNewNote = asyncHandler(async (req, res) => {
         return res.status(409).json({ message: 'Duplicate note title' });
     }
 
-    const note = await Note.create({ user, title, text });
+    const note = await Note.create({ user, title, text, client });
 
     if (note) {
         return res.status(201).json({ message: 'New note created' });
