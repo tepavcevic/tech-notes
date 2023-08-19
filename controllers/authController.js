@@ -8,108 +8,107 @@ const User = require('../models/User');
 // @route POST /auth
 // @access Public
 const login = asyncHandler(async (req, res) => {
-    const { username, password } = req?.body;
+  const { username, password } = req?.body;
 
+  if (!username || !password) {
+    return res.status(400).json({ message: 'All fields are required.' });
+  }
 
-    if (!username || !password) {
-        return res.status(400).json({ message: "All fields are required." });
-    }
+  const found = await User.findOne({ username }).exec();
 
-    const found = await User.findOne({ username }).exec();
+  if (!found || !found.active) {
+    return res.status(401).json({ message: 'Unauthorized!' });
+  }
 
+  const match = await bcrypt.compare(password, found.password);
 
-    if (!found || !found.active) {
-        return res.status(401).json({ message: "Unauthorized!" });
-    }
+  if (!match) {
+    return res.status(401).json({ message: 'Unauthorized!' });
+  }
 
-    const match = await bcrypt.compare(password, found.password);
+  const accessToken = jwt.sign(
+    {
+      UserInfo: {
+        username: found.username,
+        roles: found.roles,
+      },
+    },
+    process.env.ACCESS_TOKEN_SECRET,
+    { expiresIn: '15m' }
+  );
 
-    if (!match) {
-        return res.status(401).json({ message: "Unauthorized!" });
-    }
+  const refreshToken = jwt.sign(
+    { username: found.username },
+    process.env.REFRESH_TOKEN_SECRET,
+    { expiresIn: '7d' }
+  );
 
-    const accessToken = jwt.sign(
-        {
-            "UserInfo": {
-                "username": found.username,
-                roles: found.roles
-            }
-        },
-        process.env.ACCESS_TOKEN_SECRET,
-        { expiresIn: '15m' }
-    );
+  res.cookie('jwt', refreshToken, {
+    httpOnly: true,
+    secure: true,
+    sameSite: 'none',
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+  });
 
-    const refreshToken = jwt.sign(
-        { "username": found.username, },
-        process.env.REFRESH_TOKEN_SECRET,
-        { expiresIn: '7d' }
-    );
-
-    res.cookie('jwt', refreshToken, {
-        httpOnly: true,
-        secure: true,
-        sameSite: 'none',
-        maxAge: 7 * 24 * 60 * 60 * 1000
-    });
-
-    res.json({ accessToken });
-
+  res.json({ accessToken });
 });
-
 
 // @desc Refresh token
 // @route GET /auth/refresh
 // @access Public - token expired
 const refresh = asyncHandler(async (req, res) => {
-    const cookies = req.cookies;
+  const cookies = req.cookies;
 
-    if (!cookies?.jwt) {
-        return res.status(401).json({ message: "Unauthorized" });
-    }
+  if (!cookies?.jwt) {
+    return res.status(401).json({ message: 'Unauthorized' });
+  }
 
-    const refreshToken = cookies.jwt;
+  const refreshToken = cookies.jwt;
 
-    jwt.verify(
-        refreshToken,
-        process.env.REFRESH_TOKEN_SECRET,
-        asyncHandler(async (error, decoded) => {
-            if (error || !decoded?.username) {
-                res.status(403).json({ message: "Forbidden" });
-            }
+  jwt.verify(
+    refreshToken,
+    process.env.REFRESH_TOKEN_SECRET,
+    asyncHandler(async (error, decoded) => {
+      if (error || !decoded?.username) {
+        res.status(403).json({ message: 'Forbidden' });
+      }
 
-            const foundUser = await User.findOne({ username: decoded?.username }).exec();
+      const foundUser = await User.findOne({
+        username: decoded?.username,
+      }).exec();
 
-            if (!foundUser) {
-                res.status(401).json({ message: "Unauthorized" });
-            }
+      if (!foundUser) {
+        res.status(401).json({ message: 'Unauthorized' });
+      }
 
-            const accessToken = jwt.sign(
-                {
-                    "UserInfo": {
-                        "username": foundUser.username,
-                        roles: foundUser.roles
-                    }
-                },
-                process.env.ACCESS_TOKEN_SECRET,
-                { expiresIn: '15m' }
-            );
+      const accessToken = jwt.sign(
+        {
+          UserInfo: {
+            username: foundUser.username,
+            roles: foundUser.roles,
+          },
+        },
+        process.env.ACCESS_TOKEN_SECRET,
+        { expiresIn: '15m' }
+      );
 
-            res.json({ accessToken });
-        }))
+      res.json({ accessToken });
+    })
+  );
 });
 
 // @desc Log out
 // @route POST /auth/logout
 // @access Private
 const logout = asyncHandler(async (req, res) => {
-    const cookies = req.cookies;
+  const cookies = req.cookies;
 
-    if (!cookies) {
-        res.status(204)
-    }
+  if (!cookies) {
+    res.status(204);
+  }
 
-    res.clearCookie('jwt', { httpOnly: true, secure: true, sameSite: 'none'});
-    res.json({ message: "Cookie cleared" });
+  res.clearCookie('jwt', { httpOnly: true, secure: true, sameSite: 'none' });
+  res.json({ message: 'Cookie cleared' });
 });
 
 module.exports = { login, refresh, logout };
