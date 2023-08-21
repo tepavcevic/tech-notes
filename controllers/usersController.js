@@ -1,18 +1,14 @@
 const asyncHandler = require('express-async-handler');
 const bcrypt = require('bcrypt');
 
-const User = require('../models/User');
-const Note = require('../models/Note');
+const userServices = require('../services/userServices');
+const user = userServices();
 
 // @desc Get all users
 // @route GET /users
 // @access Private
 const getAllUsers = asyncHandler(async (req, res) => {
-  const users = await User.find().select('-password').lean();
-
-  if (!users?.length) {
-    return res.status(204).json({ message: 'No users found.' });
-  }
+  const users = await user.getUsers();
 
   res.json(users);
 });
@@ -23,26 +19,18 @@ const getAllUsers = asyncHandler(async (req, res) => {
 const createNewUser = asyncHandler(async (req, res) => {
   const { username, password, roles } = req?.body;
 
-  const duplicate = await User.findOne({ username })
-    .collation({ locale: 'en', strength: 2 })
-    .lean()
-    .exec();
+  const duplicate = await user.checkDuplicateUsername(username);
 
-  if (duplicate) {
-    return res.status(409).json({ message: 'Username already exists.' });
-  }
+  if (duplicate) throw new ConflictError('Username already exists.');
 
-  const hashedPassword = await bcrypt.hash(password, 10);
+  const hashedPassword = await user.hashPassword(password);
 
-  const userObject =
-    !Array.isArray(roles) || roles?.length === 0
-      ? { username, password: hashedPassword }
-      : { username, password: hashedPassword, roles };
+  const createdUser = await user.createUser(username, hashedPassword, roles);
 
-  const user = await User.create(userObject);
-
-  if (user) {
-    res.status(201).json({ message: `New user ${user.username} created.` });
+  if (createdUser) {
+    res
+      .status(201)
+      .json({ message: `New user ${createdUser.username} created.` });
   } else {
     res.status(400).json({ message: 'Invalid user data recieved.' });
   }

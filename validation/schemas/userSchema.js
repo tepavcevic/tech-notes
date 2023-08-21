@@ -25,7 +25,7 @@ const userSchema = {
     },
     active: { type: 'boolean' },
   },
-  required: ['username', 'password', 'roles'],
+  required: ['username', 'password'],
   additionalProperties: false,
 };
 

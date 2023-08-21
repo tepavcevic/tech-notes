@@ -6,7 +6,7 @@ const verifyJWT = require('../middleware/verifyJWT');
 const verifyRoles = require('../middleware/verifyRoles');
 const { ROLE_ADMIN_MANAGER } = require('../config/accessRoles');
 const validateDTO = require('../middleware/validateDTO');
-const userSchema = require('../validation/schemas/userSchema');
+const { userSchemaAjv } = require('../validation/schemas/index.js');
 
 router.use(verifyJWT);
 
@@ -15,7 +15,7 @@ router
   .get(usersController.getAllUsers)
   .post(
     verifyRoles(ROLE_ADMIN_MANAGER),
-    validateDTO(userSchema),
+    validateDTO(userSchemaAjv),
     usersController.createNewUser
   )
   .patch(verifyRoles(ROLE_ADMIN_MANAGER), usersController.updateUser)

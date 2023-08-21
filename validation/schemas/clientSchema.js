@@ -1,6 +1,6 @@
 const ajv = require('../ajvInstance');
 
-const userSchema = {
+const clientSchema = {
   type: 'object',
   properties: {
     firstName: {
@@ -64,4 +64,4 @@ const userSchema = {
   additionalProperties: false,
 };
 
-module.exports = ajv.compile(userSchema);
+module.exports = ajv.compile(clientSchema);

@@ -1,7 +1,9 @@
 const PermissionDeniedError = require('../validation/errors/PermissionDeniedError');
 
 const userDoesntHaveRole = (username) => {
-  console.log(JSON.stringify(`USER_DOESNT_HAVE_ACCESS_ROLE  ${username}`));
+  if (process.env.NODE_ENV === 'development')
+    console.log(JSON.stringify(`USER_DOESNT_HAVE_ACCESS_ROLE  ${username}`));
+
   throw new PermissionDeniedError("User doesn't have access role.");
 };
 
