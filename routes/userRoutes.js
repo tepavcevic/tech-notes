@@ -6,7 +6,10 @@ const verifyJWT = require('../middleware/verifyJWT');
 const verifyRoles = require('../middleware/verifyRoles');
 const { ROLE_ADMIN_MANAGER } = require('../config/accessRoles');
 const validateDTO = require('../middleware/validateDTO');
-const { userSchemaAjv } = require('../validation/schemas/index.js');
+const {
+  userSchemaAjv,
+  updateUserSchemaAjv,
+} = require('../validation/schemas/index.js');
 
 router.use(verifyJWT);
 
@@ -18,7 +21,11 @@ router
     validateDTO(userSchemaAjv),
     usersController.createNewUser
   )
-  .patch(verifyRoles(ROLE_ADMIN_MANAGER), usersController.updateUser)
+  .patch(
+    verifyRoles(ROLE_ADMIN_MANAGER),
+    validateDTO(updateUserSchemaAjv),
+    usersController.updateUser
+  )
   .delete(verifyRoles(ROLE_ADMIN_MANAGER), usersController.deleteUser);
 
 module.exports = router;

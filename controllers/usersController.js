@@ -1,8 +1,11 @@
 const asyncHandler = require('express-async-handler');
-const bcrypt = require('bcrypt');
 
 const userServices = require('../services/userServices');
+const noteServices = require('../services/noteServices');
+const { BadRequestError } = require('../validation/errors');
+
 const user = userServices();
+const note = noteServices();
 
 // @desc Get all users
 // @route GET /users
@@ -42,38 +45,19 @@ const createNewUser = asyncHandler(async (req, res) => {
 const updateUser = asyncHandler(async (req, res) => {
   const { id, username, roles, active, password } = req?.body;
 
-  if (
-    !id ||
-    !username ||
-    !Array.isArray(roles) ||
-    !roles?.length ||
-    typeof active !== 'boolean'
-  ) {
-    return res.status(400).json({ message: 'All fields are required.' });
-  }
+  const userToUpdate = await user.findUserById(id);
 
-  const user = await User.findById(id).exec();
-  if (!user) {
-    return res.status(400).json({ message: 'User not found.' });
-  }
+  const duplicate = await user.checkDuplicateUsername(username);
 
-  const duplicate = await User.findOne({ username })
-    .collation({ locale: 'en', strength: 2 })
-    .lean()
-    .exec();
-  if (duplicate && duplicate?._id.toString() !== id) {
-    return res.status(409).json({ message: 'Duplicate username' });
-  }
+  if (duplicate) throw new ConflictError('Username already exists.');
 
-  user.username = username;
-  user.roles = roles;
-  user.active = active;
+  userToUpdate.username = username;
+  userToUpdate.roles = roles;
+  userToUpdate.active = active;
 
-  if (password) {
-    user.password = await bcrypt.hash(password, 10);
-  }
+  if (password) userToUpdate.password = await user.hashPassword(password);
 
-  const updatedUser = await user.save();
+  const updatedUser = await user.save(userToUpdate);
 
   res.json(`${updatedUser.username} updated.`);
 });
@@ -84,23 +68,16 @@ const updateUser = asyncHandler(async (req, res) => {
 const deleteUser = asyncHandler(async (req, res) => {
   const { id } = req?.body;
 
-  if (!id) {
-    return res.status(400).json({ message: 'User ID required.' });
-  }
+  if (!id) throw new BadRequestError('User ID required.');
 
-  const note = await Note.findOne({ user: id }).lean().exec();
-  if (note) {
-    return res.status(400).json({ message: 'User has assigned notes.' });
-  }
+  const notes = await note.findNotesByUserId(id);
+  if (notes?.length > 0) throw new BadRequestError('User has assigned notes.');
 
-  const user = await User.findById(id).exec();
-  if (!user) {
-    return res.status(400).json({ message: 'User not found.' });
-  }
+  const userToDelete = await user.findUserById(id);
 
-  const result = await user.deleteOne();
+  await user.delete(userToDelete);
 
-  const reply = `Username ${result.username} with id ${result._id} deleted.`;
+  const reply = `Username successfully deleted.`;
   res.json({ message: reply });
 });
 

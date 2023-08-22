@@ -1,11 +1,7 @@
 const bcrypt = require('bcrypt');
 
 const User = require('../models/User');
-const Note = require('../models/Note');
-const {
-  NotFoundError,
-  ConflictError,
-} = require('../validation/errors/index.js');
+const { NotFoundError } = require('../validation/errors/index.js');
 
 const userServices = () => {
   return {
@@ -29,15 +25,32 @@ const userServices = () => {
 
       return hashedPassword;
     },
-    createUser: async (username, password, roles) => {
+    createUser: async (username, password, roles, active = true) => {
       const userObject =
         !Array.isArray(roles) || roles?.length === 0
-          ? { username, password }
-          : { username, password, roles };
+          ? { username, password, active }
+          : { username, password, roles, active };
 
       const user = await User.create(userObject);
 
       return user;
+    },
+    findUserById: async (id) => {
+      const user = await User.findById(id).exec();
+
+      if (!user) throw new NotFoundError('User not found.');
+
+      return user;
+    },
+    save: async (user) => {
+      const updatedUser = await user.save();
+
+      return updatedUser;
+    },
+    delete: async (user) => {
+      const deletedUser = await User.deleteOne(user);
+
+      return deletedUser;
     },
   };
 };
