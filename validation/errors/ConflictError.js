@@ -4,6 +4,7 @@ class ConflictError extends Error {
     this.name = 'ConflictError';
     this.status = 409;
     this.message = errorMessage;
+    this.isError = true;
   }
 }
 

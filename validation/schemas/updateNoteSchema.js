@@ -1,6 +1,6 @@
 const ajv = require('../ajvInstance');
 
-const noteSchema = {
+const updateNoteAjv = {
   type: 'object',
   properties: {
     title: {
@@ -15,7 +15,6 @@ const noteSchema = {
     },
     completed: {
       type: 'boolean',
-      default: false,
     },
     user: {
       type: 'string',
@@ -24,7 +23,6 @@ const noteSchema = {
       type: 'string',
     },
   },
-  required: ['title', 'text', 'user', 'client'],
+  required: ['title', 'text', 'completed', 'user', 'client'],
 };
-
-module.exports = ajv.compile(noteSchema);
+module.exports = ajv.compile(updateNoteAjv);

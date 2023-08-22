@@ -47,8 +47,8 @@ const userServices = () => {
 
       return updatedUser;
     },
-    delete: async (user) => {
-      const deletedUser = await User.deleteOne(user);
+    deleteUser: async (id) => {
+      const deletedUser = await User.findByIdAndDelete(id);
 
       return deletedUser;
     },

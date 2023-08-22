@@ -4,6 +4,7 @@ class ValidationError extends Error {
     this.name = 'ValidationError';
     this.status = 400;
     this.message = errors.map((error) => error.message).join(', ');
+    this.isError = true;
   }
 }
 

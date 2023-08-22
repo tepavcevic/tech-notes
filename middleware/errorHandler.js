@@ -17,27 +17,31 @@ const errorHandler = (error, req, res, next) => {
   if (process.env.NODE_ENV === 'development') console.log(error.stack);
 
   if (error instanceof ValidationError || error instanceof BadRequestError) {
-    res.status(400).json({ message: error.message, isError: true });
-  } else if (error instanceof NotFoundError) {
-    res.status(404).send(error);
-  } else if (error instanceof PermissionDeniedError) {
-    res.status(403).send(error);
+    res.status(400).json(error);
   } else if (
     error instanceof UnauthorizedError ||
     error.name === 'UnauthorizedError' ||
     error.statusCode === 401
   ) {
-    res.status(401).send('Unauthorized');
+    res.status(401).json(error);
   } else if (
     error instanceof ConflictError ||
     error.name === 'ConflictError' ||
     error.statusCode === 409
   ) {
-    res.status(409).send('Conflict');
-  } else if (error.statusCode === 404) {
-    res.status(404).send('Not found');
-  } else if (error.statusCode === 403 || error.code === 'permission_denied') {
-    res.status(403).send('Permission denied');
+    res.status(409).json(error);
+  } else if (
+    error instanceof NotFoundError ||
+    error.name === 'NotFoundError' ||
+    error.statusCode === 404
+  ) {
+    res.status(404).json(error);
+  } else if (
+    error instanceof PermissionDeniedError ||
+    error.name === 'PermissionDeniedError' ||
+    error.statusCode === 403
+  ) {
+    res.status(403).send(error);
   } else {
     console.error('SERVER Error', error);
     res.status(500).send('Internal server error');

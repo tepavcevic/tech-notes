@@ -1,4 +1,5 @@
 const Note = require('../models/Note');
+const { NotFoundError } = require('../validation/errors');
 
 const noteServices = () => {
   return {
@@ -9,13 +10,15 @@ const noteServices = () => {
 
       return notes;
     },
-    createNote: async (data) => {
-      const note = await Note.create(data);
+    createNote: async (user, title, text, client) => {
+      const note = await Note.create({ user, title, text, client });
 
       return note;
     },
     findNoteById: async (id) => {
       const note = await Note.findById(id).lean();
+
+      console.log(note);
 
       if (!note) throw new NotFoundError('Note not found.');
 
@@ -41,6 +44,16 @@ const noteServices = () => {
       const notes = await Note.find({ user: userId }).lean();
 
       return notes;
+    },
+    checkDuplicateNoteTitle: async (title) => {
+      const duplicate = await Note.findOne({ title }).lean();
+
+      return duplicate;
+    },
+    save: async (note) => {
+      const savedNote = await Note.findOneAndUpdate({ _id: note.id }, note);
+
+      return savedNote;
     },
   };
 };
