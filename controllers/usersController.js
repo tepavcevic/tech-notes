@@ -2,7 +2,7 @@ const asyncHandler = require('express-async-handler');
 
 const userServices = require('../services/userServices');
 const noteServices = require('../services/noteServices');
-const { BadRequestError } = require('../validation/errors');
+const { BadRequestError, ConflictError } = require('../validation/errors');
 
 const user = userServices();
 const note = noteServices();
@@ -35,7 +35,7 @@ const createNewUser = asyncHandler(async (req, res) => {
       .status(201)
       .json({ message: `New user ${createdUser.username} created.` });
   } else {
-    res.status(400).json({ message: 'Invalid user data recieved.' });
+    throw new BadRequestError('Invalid user data recieved.');
   }
 });
 
@@ -77,8 +77,7 @@ const deleteUser = asyncHandler(async (req, res) => {
 
   await user.delete(userToDelete);
 
-  const reply = `Username successfully deleted.`;
-  res.json({ message: reply });
+  res.json({ message: 'Username successfully deleted.' });
 });
 
 module.exports = { getAllUsers, createNewUser, updateUser, deleteUser };

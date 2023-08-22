@@ -5,6 +5,7 @@ const {
   NotFoundError,
   PermissionDeniedError,
   UnauthorizedError,
+  ConflictError,
 } = require('../validation/errors');
 
 const errorHandler = (error, req, res, next) => {
@@ -27,6 +28,12 @@ const errorHandler = (error, req, res, next) => {
     error.statusCode === 401
   ) {
     res.status(401).send('Unauthorized');
+  } else if (
+    error instanceof ConflictError ||
+    error.name === 'ConflictError' ||
+    error.statusCode === 409
+  ) {
+    res.status(409).send('Conflict');
   } else if (error.statusCode === 404) {
     res.status(404).send('Not found');
   } else if (error.statusCode === 403 || error.code === 'permission_denied') {
