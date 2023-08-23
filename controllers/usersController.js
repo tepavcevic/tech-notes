@@ -1,12 +1,10 @@
 const asyncHandler = require('express-async-handler');
 
 const userServices = require('../services/userServices');
-const noteServices = require('../services/noteServices');
-const { BadRequestError, ConflictError } = require('../validation/errors');
+const { BadRequestError } = require('../validation/errors');
 const { statusCodes, messageResponses } = require('../constants/responses');
 
 const user = userServices();
-const note = noteServices();
 
 // @desc Get all users
 // @route GET /users
@@ -21,9 +19,7 @@ const getAllUsers = asyncHandler(async (req, res) => {
 // @route POST /users
 // @access Private
 const createNewUser = asyncHandler(async (req, res) => {
-  const { username, password, roles } = req?.body;
-
-  const createdUser = await user.createUser(username, password, roles);
+  const createdUser = await user.createUser(req.body);
 
   if (createdUser) {
     res
@@ -38,15 +34,7 @@ const createNewUser = asyncHandler(async (req, res) => {
 // @route PATCH /users
 // @access Private
 const updateUser = asyncHandler(async (req, res) => {
-  const { id, username, roles, active, password } = req?.body;
-
-  const updatedUser = await user.updateUser(
-    id,
-    username,
-    roles,
-    active,
-    password
-  );
+  const updatedUser = await user.updateUser(req.body);
 
   res.json(`${updatedUser.username} ${messageResponses.UPDATED}`);
 });
@@ -55,19 +43,9 @@ const updateUser = asyncHandler(async (req, res) => {
 // @route DELETE /users
 // @access Private
 const deleteUser = asyncHandler(async (req, res) => {
-  const { id } = req?.body;
+  const deletedUser = await user.deleteUser(id);
 
-  if (!id) throw new BadRequestError(messageResponses.IDENTIFIER_REQUIRED);
-
-  const notes = await note.findNotesByUserId(id);
-  if (notes?.length > 0)
-    throw new BadRequestError(messageResponses.USER_HAS_ASSIGNED_NOTES);
-
-  await user.findUserById(id);
-
-  await user.deleteUser(id);
-
-  res.json({ message: `${user.username} ${messageResponses.DELETED}` });
+  res.json({ message: `${deletedUser.username} ${messageResponses.DELETED}` });
 });
 
 module.exports = { getAllUsers, createNewUser, updateUser, deleteUser };

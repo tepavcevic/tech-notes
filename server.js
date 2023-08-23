@@ -37,29 +37,16 @@ app.use('/users', require('./routes/userRoutes'));
 app.use('/clients', require('./routes/clientRoutes'));
 app.use('/notes', require('./routes/noteRoutes'));
 
-app.all('*', (req, res) => {
-  res.status(404);
-
-  if (req.accepts('html')) {
-    return res.sendFile(path.join(__dirname, 'views', '404.html'));
-  }
-
-  if (req.accepts('json')) {
-    return res.json({ message: '404 Not Found' });
-  }
-
-  res.type('txt').send('404 Not Found');
-});
-
 app.use(errorHandler);
 
 mongoose.connection.once('open', () => {
-  console.log('Connected to MongoDB');
+  if (process.env.NODE_ENV === 'development')
+    console.log('Connected to MongoDB');
   app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 });
 
 mongoose.connection.on('error', (error) => {
-  console.log(error);
+  if (process.env.NODE_ENV === 'development') console.log(error);
   logEvents(
     `${error.no}: ${error.code}\t${error.syscall}\t${error.hostname}`,
     'mongoErrors.log'

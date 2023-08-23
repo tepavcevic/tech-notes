@@ -17,7 +17,16 @@ function userServices() {
 
       return users;
     },
-    createUser: async (username, password, roles, active = true) => {
+    getUserById: async (id) => {
+      const user = await User.findById(id).select('-password').lean();
+
+      if (!user) throw new NotFoundError(messageResponses.USER_NOT_FOUND);
+
+      return user;
+    },
+    createUser: async (payload) => {
+      const { username, password, roles, active = true } = payload;
+
       const duplicate = await User.findOne({ username })
         .collation({ locale: 'en', strength: 2 })
         .lean()
@@ -37,7 +46,9 @@ function userServices() {
 
       return user;
     },
-    updateUser: async (id, username, roles, active, password) => {
+    updateUser: async (payload) => {
+      const { id, username, roles, active, password } = payload;
+
       const userToUpdate = await User.findById(id);
 
       if (!userToUpdate) throw new NotFoundError(messageResponses.NOT_FOUND);
