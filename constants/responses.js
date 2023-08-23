@@ -26,6 +26,7 @@ const messageResponses = {
   DELETED: 'deleted.',
   SERVER_ERROR: 'Internal server error.',
   COOKIE_CLEARED: 'Cookie cleared.',
+  USER_CLIENT_NOT_FOUND: 'User or client not found.',
 };
 
 module.exports = { statusCodes, messageResponses };

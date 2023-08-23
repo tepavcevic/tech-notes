@@ -3,6 +3,9 @@ const ajv = require('../ajvInstance');
 const updateNoteAjv = {
   type: 'object',
   properties: {
+    id: {
+      type: 'string',
+    },
     title: {
       type: 'string',
       minLength: 4,
@@ -23,6 +26,7 @@ const updateNoteAjv = {
       type: 'string',
     },
   },
-  required: ['title', 'text', 'completed', 'user', 'client'],
+  required: ['id', 'title', 'text', 'completed', 'user', 'client'],
 };
+
 module.exports = ajv.compile(updateNoteAjv);

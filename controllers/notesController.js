@@ -4,6 +4,7 @@ const noteServices = require('../services/noteServices');
 const userServices = require('../services/userServices');
 const clientServices = require('../services/clientServices');
 const { ConflictError, BadRequestError } = require('../validation/errors');
+const { statusCodes, messageResponses } = require('../constants/responses');
 
 const note = noteServices();
 const user = userServices();
@@ -15,37 +16,21 @@ const client = clientServices();
 const getAllNotes = asyncHandler(async (req, res) => {
   const notes = await note.getNotes();
 
-  const notesWithUserAndClient = await Promise.all(
-    notes?.map(async (note) => {
-      const noteUser = await user.findUserById(note.user);
-      const noteClient = await client.findClientById(note.client);
-      return {
-        ...note,
-        username: noteUser.username,
-        clientMetadata: noteClient,
-      };
-    })
-  );
-
-  res.json(notesWithUserAndClient);
+  res.json(notes);
 });
 
 // @desc Create new note
 // @route POST /notes
 // @access Private
 const createNewNote = asyncHandler(async (req, res) => {
-  const { user, title, text, client } = req?.body;
-
-  const duplicate = await note.checkDuplicateNoteTitle(title);
-
-  if (duplicate) throw new ConflictError('Duplicate note title');
-
-  const createdNote = await note.createNote(user, title, text, client);
+  const createdNote = await note.createNote(req.body);
 
   if (createdNote) {
-    return res.status(201).json({ message: 'New note created' });
+    return res
+      .status(statusCodes.CREATED)
+      .json({ message: `${createdNote.title} ${messageResponses.CREATED}` });
   } else {
-    throw new BadRequestError('Invalid note data received');
+    throw new BadRequestError(messageResponses.INVALID_DATA_RECEIVED);
   }
 });
 
@@ -53,38 +38,18 @@ const createNewNote = asyncHandler(async (req, res) => {
 // @route PATCH /notes
 // @access Private
 const updateNote = asyncHandler(async (req, res) => {
-  const receivedNote = req?.body;
+  const updatedNote = await note.updateNote(req.body);
 
-  await note.findNoteById(receivedNote.id);
-
-  const duplicate = await note.checkDuplicateNoteTitle(receivedNote.title);
-  if (duplicate && duplicate?._id.toString() !== receivedNote.id)
-    throw new ConflictError('Duplicate note title');
-
-  await user.findUserById(receivedNote.user);
-  await client.findClientById(receivedNote.client);
-
-  const updatedNote = await note.save(receivedNote);
-
-  res.json(`${updatedNote.title} updated.`);
+  res.json(`${updatedNote.title} ${messageResponses.UPDATED}`);
 });
 
 // @desc Delete a note
 // @route DELETE /notes
 // @access Private
 const deleteNote = asyncHandler(async (req, res) => {
-  const { id } = req?.body;
+  const noteToDelete = await note.deleteNote();
 
-  if (!id) throw new BadRequestError('Note id is required.');
-
-  const noteToDelete = await note.findNoteById(id);
-
-  if (!noteToDelete.completed)
-    throw new BadRequestError('Note is not completed.');
-
-  await note.deleteNote(id);
-
-  res.json(`${noteToDelete.title} deleted.`);
+  res.json(`${noteToDelete.title} ${messageResponses.DELETED}`);
 });
 
 module.exports = { getAllNotes, createNewNote, updateNote, deleteNote };

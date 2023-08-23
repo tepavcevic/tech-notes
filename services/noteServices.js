@@ -1,16 +1,41 @@
 const Note = require('../models/Note');
-const { NotFoundError } = require('../validation/errors');
+const User = require('../models/User');
+const Client = require('../models/Client');
+const {
+  NotFoundError,
+  ConflictError,
+  BadRequestError,
+} = require('../validation/errors');
+const { messageResponses } = require('../constants/responses');
 
-const noteServices = () => {
+function noteServices() {
   return {
     getNotes: async () => {
       const notes = await Note.find().lean();
+      if (!notes?.length) return res.status(statusCodes.NO_CONTENT).json([]);
 
-      if (!notes?.length) throw new NotFoundError('No notes found.');
+      const notesWithUserAndClient = await Promise.all(
+        notes.map(async (note) => {
+          const noteUser = await User.findById(note.user);
+          const noteClient = await Client.findById(note.client);
+          return {
+            ...note,
+            username: noteUser.username,
+            clientMetadata: noteClient,
+          };
+        })
+      );
 
-      return notes;
+      return notesWithUserAndClient;
     },
-    createNote: async (user, title, text, client) => {
+    createNote: async (payload) => {
+      const { user, title, text, client } = payload;
+
+      const duplicate = await Note.findOne({ title }).lean();
+
+      if (duplicate)
+        throw new ConflictError(messageResponses.DUPLICATE_IDENTIFIER);
+
       const note = await Note.create({ user, title, text, client });
 
       return note;
@@ -20,42 +45,43 @@ const noteServices = () => {
 
       console.log(note);
 
-      if (!note) throw new NotFoundError('Note not found.');
+      if (!note) throw new NotFoundError(messageResponses.NOT_FOUND);
 
       return note;
     },
-    updateNote: async (id, data) => {
-      const updatedNote = await Note.findByIdAndUpdate(id, data, {
-        new: true,
-      }).lean();
+    updateNote: async (payload) => {
+      const { id, ...data } = payload;
 
-      if (!updatedNote) throw new NotFoundError('Note not found.');
+      const duplicate = await Note.findOne({ title: data.title }).lean();
+
+      if (duplicate && duplicate?._id.toString() !== data.id)
+        throw new ConflictError(messageResponses.DUPLICATE_IDENTIFIER);
+
+      const noteUser = await User.findById(data.user);
+      const noteClient = await Client.findById(data.client);
+
+      if (!noteUser || !noteClient)
+        throw new BadRequestError(messageResponses.USER_CLIENT_NOT_FOUND);
+
+      const updatedNote = await Note.findByIdAndUpdate(id, data);
 
       return updatedNote;
     },
-    deleteNote: async (id) => {
-      const deletedNote = await Note.findByIdAndDelete(id).lean();
+    deleteNote: async (payload) => {
+      const { id } = payload;
 
-      if (!deletedNote) throw new NotFoundError('Note not found.');
+      if (!id) throw new BadRequestError(messageResponses.IDENTIFIER_REQUIRED);
 
-      return deletedNote;
-    },
-    findNotesByUserId: async (userId) => {
-      const notes = await Note.find({ user: userId }).lean();
+      const noteToDelete = await Note.findById(id);
 
-      return notes;
-    },
-    checkDuplicateNoteTitle: async (title) => {
-      const duplicate = await Note.findOne({ title }).lean();
+      if (!noteToDelete.completed)
+        throw new BadRequestError(messageResponses.NOTE_NOT_COMPLETED);
 
-      return duplicate;
-    },
-    save: async (note) => {
-      const savedNote = await Note.findOneAndUpdate({ _id: note.id }, note);
+      await Note.findByIdAndDelete(id).lean();
 
-      return savedNote;
+      return noteToDelete;
     },
   };
-};
+}
 
 module.exports = noteServices;
