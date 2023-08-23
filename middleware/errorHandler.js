@@ -7,6 +7,7 @@ const {
   UnauthorizedError,
   ConflictError,
 } = require('../validation/errors');
+const { statusCodes, messageResponses } = require('../constants/responses');
 
 const errorHandler = (error, req, res, next) => {
   logEvents(
@@ -17,34 +18,33 @@ const errorHandler = (error, req, res, next) => {
   if (process.env.NODE_ENV === 'development') console.log(error.stack);
 
   if (error instanceof ValidationError || error instanceof BadRequestError) {
-    res.status(400).json(error);
+    res.status(statusCodes.BAD_REQUEST).json(error);
   } else if (
     error instanceof UnauthorizedError ||
     error.name === 'UnauthorizedError' ||
-    error.statusCode === 401
+    error.statusCode === statusCodes.UNAUTHORIZED
   ) {
-    res.status(401).json(error);
+    res.status(statusCodes.UNAUTHORIZED).json(error);
   } else if (
     error instanceof ConflictError ||
     error.name === 'ConflictError' ||
-    error.statusCode === 409
+    error.statusCode === statusCodes.CONFLICT
   ) {
-    res.status(409).json(error);
+    res.status(statusCodes.CONFLICT).json(error);
   } else if (
     error instanceof NotFoundError ||
     error.name === 'NotFoundError' ||
-    error.statusCode === 404
+    error.statusCode === statusCodes.NOT_FOUND
   ) {
-    res.status(404).json(error);
+    res.status(statusCodes.NOT_FOUND).json(error);
   } else if (
     error instanceof PermissionDeniedError ||
     error.name === 'PermissionDeniedError' ||
-    error.statusCode === 403
+    error.statusCode === statusCodes.FORBIDDEN
   ) {
-    res.status(403).send(error);
+    res.status(statusCodes.FORBIDDEN).json(error);
   } else {
-    console.error('SERVER Error', error);
-    res.status(500).send('Internal server error');
+    res.status(statusCodes.SERVER_ERROR).send(messageResponses.SERVER_ERROR);
   }
 };
 

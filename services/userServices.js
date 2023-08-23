@@ -1,9 +1,14 @@
-const bcrypt = require('bcrypt');
-
+const cryptography = require('../common/cryptography');
 const User = require('../models/User');
-const { NotFoundError } = require('../validation/errors/index.js');
+const Note = require('../models/Note');
+const {
+  NotFoundError,
+  ConflictError,
+  BadRequestError,
+} = require('../validation/errors/index.js');
+const { messageResponses } = require('../constants/responses');
 
-const userServices = () => {
+function userServices() {
   return {
     getUsers: async () => {
       const users = await User.find().select('-password').lean();
@@ -12,47 +17,57 @@ const userServices = () => {
 
       return users;
     },
-    checkDuplicateUsername: async (username) => {
+    createUser: async (username, password, roles, active = true) => {
       const duplicate = await User.findOne({ username })
         .collation({ locale: 'en', strength: 2 })
         .lean()
         .exec();
 
-      return duplicate;
-    },
-    hashPassword: async (password) => {
-      const hashedPassword = await bcrypt.hash(password, 10);
+      if (duplicate)
+        throw new ConflictError(messageResponses.DUPLICATE_IDENTIFIER);
 
-      return hashedPassword;
-    },
-    createUser: async (username, password, roles, active = true) => {
+      const hashedPassword = await cryptography.hashPassword(password);
+
       const userObject =
         !Array.isArray(roles) || roles?.length === 0
-          ? { username, password, active }
-          : { username, password, roles, active };
+          ? { username, password: hashedPassword, active }
+          : { username, password: hashedPassword, roles, active };
 
       const user = await User.create(userObject);
 
       return user;
     },
-    findUserById: async (id) => {
-      const user = await User.findById(id).exec();
+    updateUser: async (id, username, roles, active, password) => {
+      const userToUpdate = await User.findById(id);
 
-      if (!user) throw new NotFoundError('User not found.');
+      if (!userToUpdate) throw new NotFoundError(messageResponses.NOT_FOUND);
 
-      return user;
-    },
-    save: async (user) => {
-      const updatedUser = await user.save();
+      userToUpdate.username = username;
+      userToUpdate.roles = roles;
+      userToUpdate.active = active;
+
+      if (password)
+        userToUpdate.password = await cryptography.hashPassword(password);
+
+      const updatedUser = await userToUpdate.save();
 
       return updatedUser;
     },
     deleteUser: async (id) => {
-      const deletedUser = await User.findByIdAndDelete(id);
+      if (!id) throw new BadRequestError(messageResponses.IDENTIFIER_REQUIRED);
 
-      return deletedUser;
+      const notes = await Note.findOne({ user: id }).lean().exec();
+      if (notes?.length > 0)
+        throw new BadRequestError(messageResponses.USER_HAS_ASSIGNED_NOTES);
+
+      const user = await User.findById(id).lean();
+      if (!user) throw new NotFoundError(messageResponses.USER_NOT_FOUND);
+
+      await User.findByIdAndDelete(id);
+
+      return user;
     },
   };
-};
+}
 
 module.exports = userServices;

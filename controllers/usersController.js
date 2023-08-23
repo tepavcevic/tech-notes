@@ -3,6 +3,7 @@ const asyncHandler = require('express-async-handler');
 const userServices = require('../services/userServices');
 const noteServices = require('../services/noteServices');
 const { BadRequestError, ConflictError } = require('../validation/errors');
+const { statusCodes, messageResponses } = require('../constants/responses');
 
 const user = userServices();
 const note = noteServices();
@@ -22,20 +23,14 @@ const getAllUsers = asyncHandler(async (req, res) => {
 const createNewUser = asyncHandler(async (req, res) => {
   const { username, password, roles } = req?.body;
 
-  const duplicate = await user.checkDuplicateUsername(username);
-
-  if (duplicate) throw new ConflictError('Username already exists.');
-
-  const hashedPassword = await user.hashPassword(password);
-
-  const createdUser = await user.createUser(username, hashedPassword, roles);
+  const createdUser = await user.createUser(username, password, roles);
 
   if (createdUser) {
     res
-      .status(201)
-      .json({ message: `New user ${createdUser.username} created.` });
+      .status(statusCodes.CREATED)
+      .json({ message: `${createdUser.username} ${messageResponses.CREATED}` });
   } else {
-    throw new BadRequestError('Invalid user data recieved.');
+    throw new BadRequestError(messageResponses.INVALID_DATA_RECEIVED);
   }
 });
 
@@ -45,21 +40,15 @@ const createNewUser = asyncHandler(async (req, res) => {
 const updateUser = asyncHandler(async (req, res) => {
   const { id, username, roles, active, password } = req?.body;
 
-  const userToUpdate = await user.findUserById(id);
+  const updatedUser = await user.updateUser(
+    id,
+    username,
+    roles,
+    active,
+    password
+  );
 
-  const duplicate = await user.checkDuplicateUsername(username);
-
-  if (duplicate) throw new ConflictError('Username already exists.');
-
-  userToUpdate.username = username;
-  userToUpdate.roles = roles;
-  userToUpdate.active = active;
-
-  if (password) userToUpdate.password = await user.hashPassword(password);
-
-  const updatedUser = await user.save(userToUpdate);
-
-  res.json(`${updatedUser.username} updated.`);
+  res.json(`${updatedUser.username} ${messageResponses.UPDATED}`);
 });
 
 // @desc Delete a user
@@ -68,16 +57,17 @@ const updateUser = asyncHandler(async (req, res) => {
 const deleteUser = asyncHandler(async (req, res) => {
   const { id } = req?.body;
 
-  if (!id) throw new BadRequestError('User ID required.');
+  if (!id) throw new BadRequestError(messageResponses.IDENTIFIER_REQUIRED);
 
   const notes = await note.findNotesByUserId(id);
-  if (notes?.length > 0) throw new BadRequestError('User has assigned notes.');
+  if (notes?.length > 0)
+    throw new BadRequestError(messageResponses.USER_HAS_ASSIGNED_NOTES);
 
-  const userToDelete = await user.findUserById(id);
+  await user.findUserById(id);
 
   await user.deleteUser(id);
 
-  res.json({ message: 'Username successfully deleted.' });
+  res.json({ message: `${user.username} ${messageResponses.DELETED}` });
 });
 
 module.exports = { getAllUsers, createNewUser, updateUser, deleteUser };
