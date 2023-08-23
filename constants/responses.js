@@ -25,6 +25,7 @@ const messageResponses = {
   UPDATED: 'updated.',
   DELETED: 'deleted.',
   SERVER_ERROR: 'Internal server error.',
+  COOKIE_CLEARED: 'Cookie cleared.',
 };
 
 module.exports = { statusCodes, messageResponses };
