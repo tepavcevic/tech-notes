@@ -3,10 +3,10 @@ const bcrypt = require('bcrypt');
 const SALT_ROUNDS = 10;
 
 module.exports = {
-  comparePasswords: (password, found) =>
+  comparePasswords: (password, storedPassword) =>
     new Promise((resolve, reject) => {
       try {
-        const match = bcrypt.compare(password, found.password);
+        const match = bcrypt.compare(password, storedPassword);
 
         if (match) {
           return resolve(match);

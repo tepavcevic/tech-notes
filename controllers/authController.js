@@ -12,7 +12,14 @@ const auth = authServices();
 const login = asyncHandler(async (req, res) => {
   const { username, password } = req?.body;
 
-  const accessToken = await auth.login(username, password);
+  const { accessToken, refreshToken } = await auth.login(username, password);
+
+  res.cookie('jwt', refreshToken, {
+    httpOnly: true,
+    secure: true,
+    sameSite: 'none',
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+  });
 
   res.json({ accessToken });
 });

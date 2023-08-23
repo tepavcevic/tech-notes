@@ -2,11 +2,13 @@ const asyncHandler = require('express-async-handler');
 const jwt = require('jsonwebtoken');
 
 const User = require('../models/User');
+const cryptography = require('../common/cryptography');
 const { messageResponses } = require('../constants/responses');
 const {
   UnauthorizedError,
   PermissionDeniedError,
 } = require('../validation/errors');
+const { signAccessToken, signRefreshToken } = require('../common/jwtTokens');
 
 function authServices() {
   return {
@@ -19,7 +21,7 @@ function authServices() {
       if (!user || !user.active)
         throw new UnauthorizedError(messageResponses.UNAUTHORIZED);
 
-      const isPasswordValid = await cryptography.comparePassword(
+      const isPasswordValid = await cryptography.comparePasswords(
         password,
         user.password
       );
@@ -27,31 +29,11 @@ function authServices() {
       if (!isPasswordValid)
         throw new UnauthorizedError(messageResponses.UNAUTHORIZED);
 
-      const accessToken = jwt.sign(
-        {
-          UserInfo: {
-            username: user.username,
-            roles: user.roles,
-          },
-        },
-        process.env.ACCESS_TOKEN_SECRET,
-        { expiresIn: '15m' }
-      );
+      const accessToken = signAccessToken(user);
 
-      const refreshToken = jwt.sign(
-        { username: user.username },
-        process.env.REFRESH_TOKEN_SECRET,
-        { expiresIn: '7d' }
-      );
+      const refreshToken = signRefreshToken(user);
 
-      res.cookie('jwt', refreshToken, {
-        httpOnly: true,
-        secure: true,
-        sameSite: 'none',
-        maxAge: 7 * 24 * 60 * 60 * 1000,
-      });
-
-      return accessToken;
+      return { accessToken, refreshToken };
     },
     refreshToken: (refreshToken) =>
       new Promise((resolve, reject) => {
@@ -64,25 +46,16 @@ function authServices() {
                 new PermissionDeniedError(messageResponses.FORBIDDEN)
               );
 
-            const foundUser = await User.findOne({
+            const user = await User.findOne({
               username: decoded?.username,
             }).exec();
 
-            if (!foundUser)
+            if (!user)
               return reject(
                 new UnauthorizedError(messageResponses.UNAUTHORIZED)
               );
 
-            const accessToken = jwt.sign(
-              {
-                UserInfo: {
-                  username: foundUser.username,
-                  roles: foundUser.roles,
-                },
-              },
-              process.env.ACCESS_TOKEN_SECRET,
-              { expiresIn: '15m' }
-            );
+            const accessToken = signAccessToken(user);
 
             return resolve(accessToken);
           })
