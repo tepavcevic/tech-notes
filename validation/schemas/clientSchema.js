@@ -19,6 +19,7 @@ const clientSchema = {
       type: 'string',
       minLength: 9,
       maxLength: 9,
+      pattern: '^[A-Z0-9]+$',
     },
     email: {
       type: 'string',
