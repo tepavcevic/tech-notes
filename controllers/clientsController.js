@@ -1,17 +1,20 @@
 const asyncHandler = require('express-async-handler');
 
-const Client = require('../models/Client');
-const Note = require('../models/Note');
+const { statusCodes, messageResponses } = require('../constants/responses');
+const clientService = require('../services/clientServices');
+
+const {
+  getClients,
+  createClient,
+  updateClient: updateClientService,
+  deleteClient: deleteClientService,
+} = clientService();
 
 // @desc Get all clients
 // @route GET /clients
 // @access Private
 const getAllClients = asyncHandler(async (req, res) => {
-  const clients = await Client.find().lean();
-
-  if (!clients?.length) {
-    return res.status(204).json({ message: 'No clients found.' });
-  }
+  const clients = await getClients();
 
   res.json(clients);
 });
@@ -20,25 +23,16 @@ const getAllClients = asyncHandler(async (req, res) => {
 // @route POST /clients
 // @access Private
 const createNewClient = asyncHandler(async (req, res) => {
-  const { IDnumber } = req.body;
-
-  const duplicate = await Client.findOne({ IDnumber })
-    .collation({ locale: 'en', strength: 2 })
-    .lean()
-    .exec();
-
-  if (duplicate) {
-    return res.status(409).json({ message: 'Client already exists.' });
-  }
-
-  const client = await Client.create({ ...req.body });
+  const client = await createClient(req.body);
 
   if (client) {
     res
-      .status(201)
-      .json({ message: `New client ${client.firstName} created.` });
+      .status(statusCodes.CREATED)
+      .json({ message: `${client.firstName} ${messageResponses.CREATED}` });
   } else {
-    res.status(400).json({ message: 'Invalid client data recieved.' });
+    res
+      .status(statusCodes.BAD_REQUEST)
+      .json({ message: messageResponses.INVALID_DATA_RECEIVED });
   }
 });
 
@@ -46,73 +40,20 @@ const createNewClient = asyncHandler(async (req, res) => {
 // @route PATCH /clients
 // @access Private
 const updateClient = asyncHandler(async (req, res) => {
-  const { id, IDnumber, email, phone, street, city, position, active } =
-    req?.body;
-  const { lat, lng } = position || {};
+  const updatedClient = await updateClientService(req.body);
 
-  if (
-    !id ||
-    !IDnumber ||
-    !email ||
-    !phone ||
-    !street ||
-    !city ||
-    !lat ||
-    !lng ||
-    typeof active !== 'boolean'
-  ) {
-    return res.status(400).json({ message: 'All fields are required.' });
-  }
-
-  const client = await Client.findById(id).exec();
-  if (!client) {
-    return res.status(400).json({ message: 'Client not found.' });
-  }
-
-  const duplicate = await Client.findOne({ IDnumber })
-    .collation({ locale: 'en', strength: 2 })
-    .lean()
-    .exec();
-  if (duplicate && duplicate?._id.toString() !== id) {
-    return res.status(409).json({ message: 'Duplicate client' });
-  }
-
-  client.email = email;
-  client.phone = phone;
-  client.street = street;
-  client.city = city;
-  client.position = position;
-  client.active = active;
-
-  const updatedClient = await client.save();
-
-  res.json(`${updatedClient.email} updated.`);
+  res.json(`${updatedClient.email} ${messageResponses.UPDATED}`);
 });
 
 // @desc Delete a client
 // @route DELETE /clients
 // @access Private
 const deleteClient = asyncHandler(async (req, res) => {
-  const { id } = req?.body;
+  const deletedClient = await deleteClientService(req.body);
 
-  if (!id) {
-    return res.status(400).json({ message: 'Client ID required.' });
-  }
-
-  const note = await Note.findOne({ client: id }).lean().exec();
-  if (note) {
-    return res.status(400).json({ message: 'Client has assigned notes.' });
-  }
-
-  const client = await Client.findById(id).exec();
-  if (!client) {
-    return res.status(400).json({ message: 'Client not found.' });
-  }
-
-  const result = await client.deleteOne();
-
-  const reply = `Client ${result.firstName} with id ${result._id} deleted.`;
-  res.json({ message: reply });
+  res.json({
+    message: `${deletedClient.firstName} ${messageResponses.DELETED}`,
+  });
 });
 
 module.exports = { getAllClients, createNewClient, updateClient, deleteClient };

@@ -21,6 +21,7 @@ const messageResponses = {
   IDENTIFIER_REQUIRED: 'Identifier field is required.',
   NOTE_NOT_COMPLETED: 'Note is not completed.',
   USER_HAS_ASSIGNED_NOTES: 'User has assigned notes.',
+  CLIENT_HAS_ASSIGNED_NOTES: 'Client has assigned notes.',
   CREATED: 'created.',
   UPDATED: 'updated.',
   DELETED: 'deleted.',

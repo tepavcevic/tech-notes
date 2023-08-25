@@ -7,6 +7,7 @@ const verifyRoles = require('../middleware/verifyRoles');
 const { ROLE_ADMIN_MANAGER } = require('../config/accessRoles');
 const validateDTO = require('../middleware/validateDTO');
 const clientSchema = require('../validation/schemas/clientSchema');
+const updateClientSchema = require('../validation/schemas/updateClientSchema');
 
 router.use(verifyJWT);
 
@@ -18,7 +19,11 @@ router
     validateDTO(clientSchema),
     clientsController.createNewClient
   )
-  .patch(verifyRoles(ROLE_ADMIN_MANAGER), clientsController.updateClient)
+  .patch(
+    verifyRoles(ROLE_ADMIN_MANAGER),
+    validateDTO(updateClientSchema),
+    clientsController.updateClient
+  )
   .delete(verifyRoles(ROLE_ADMIN_MANAGER), clientsController.deleteClient);
 
 module.exports = router;
