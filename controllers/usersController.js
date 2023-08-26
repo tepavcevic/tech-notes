@@ -43,7 +43,7 @@ const updateUser = asyncHandler(async (req, res) => {
 // @route DELETE /users
 // @access Private
 const deleteUser = asyncHandler(async (req, res) => {
-  const deletedUser = await user.deleteUser(id);
+  const deletedUser = await user.deleteUser(req.body);
 
   res.json({ message: `${deletedUser.username} ${messageResponses.DELETED}` });
 });

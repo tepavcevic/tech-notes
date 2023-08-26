@@ -64,7 +64,8 @@ function userServices() {
 
       return updatedUser;
     },
-    deleteUser: async (id) => {
+    deleteUser: async (payload) => {
+      const { id } = payload;
       if (!id) throw new BadRequestError(messageResponses.IDENTIFIER_REQUIRED);
 
       const notes = await Note.findOne({ user: id }).lean().exec();
