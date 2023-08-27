@@ -47,7 +47,7 @@ const updateNote = asyncHandler(async (req, res) => {
 // @route DELETE /notes
 // @access Private
 const deleteNote = asyncHandler(async (req, res) => {
-  const noteToDelete = await note.deleteNote();
+  const noteToDelete = await note.deleteNote(req.body);
 
   res.json(`${noteToDelete.title} ${messageResponses.DELETED}`);
 });

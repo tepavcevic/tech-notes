@@ -54,7 +54,7 @@ function noteServices() {
 
       const duplicate = await Note.findOne({ title: data.title }).lean();
 
-      if (duplicate && duplicate?._id.toString() !== data.id)
+      if (duplicate && duplicate?._id.toString() !== id)
         throw new ConflictError(messageResponses.DUPLICATE_IDENTIFIER);
 
       const noteUser = await User.findById(data.user);
