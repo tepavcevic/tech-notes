@@ -21,7 +21,6 @@ Project uses:
 Features in development / still not implemented
 
 - quering data through URL (filtering and sorting)
-- insure not to assign notes to inactive users/clients
 - insure user or client cannot be made inactive if currently has assigned note(s)
 - quering users and clients through URL by name when assigning a new note
 - unit tests as system verification

@@ -29,16 +29,29 @@ function noteServices() {
       return notesWithUserAndClient;
     },
     createNote: async (payload) => {
-      const { user, title, text, client } = payload;
+      const { user: userId, title, text, client: clientId } = payload;
 
-      const duplicate = await Note.findOne({ title }).lean();
+      const [duplicate, client, user] = await Promise.all([
+        Note.findOne({ title }).lean(),
+        Client.findById(clientId).lean(),
+        User.findById(userId).lean(),
+      ]);
 
       if (duplicate)
         throw new ConflictError(messageResponses.DUPLICATE_IDENTIFIER);
 
-      const note = await Note.create({ user, title, text, client });
+      console.log(client, '\n\n\n', user);
+      if (!client.active || !user.active)
+        throw new BadRequestError(messageResponses.USER_CLENT_NOT_ACTIVE);
 
-      return note;
+      const newNote = await Note.create({
+        user: userId,
+        title,
+        text,
+        client: clientId,
+      });
+
+      return newNote;
     },
     findNoteById: async (id) => {
       const note = await Note.findById(id).lean();

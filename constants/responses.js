@@ -28,6 +28,7 @@ const messageResponses = {
   SERVER_ERROR: 'Internal server error.',
   COOKIE_CLEARED: 'Cookie cleared.',
   USER_CLIENT_NOT_FOUND: 'User or client not found.',
+  USER_CLENT_NOT_ACTIVE: 'User or client not active.',
 };
 
 module.exports = { statusCodes, messageResponses };
