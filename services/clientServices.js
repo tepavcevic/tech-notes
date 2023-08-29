@@ -42,16 +42,20 @@ function clientServices() {
     updateClient: async (payload) => {
       const { id, IDnumber } = payload;
 
-      const client = await Client.findById(id).exec();
+      const [client, note, duplicateID] = await Promise.all([
+        Client.findById(id).exec(),
+        Note.findOne({ client: id }).lean(),
+        Client.findOne({ IDnumber })
+          .collation({ locale: 'en', strength: 2 })
+          .lean(),
+      ]);
 
       if (!client) throw new NotFoundError(messageResponses.NOT_FOUND);
 
-      const duplicate = await Client.findOne({ IDnumber })
-        .collation({ locale: 'en', strength: 2 })
-        .lean()
-        .exec();
+      if (note)
+        throw new ConflictError(messageResponses.CLIENT_HAS_ASSIGNED_NOTES);
 
-      if (duplicate && duplicate?._id.toString() !== id)
+      if (duplicateID && duplicateID?._id.toString() !== id)
         throw new ConflictError(messageResponses.DUPLICATE_IDENTIFIER);
 
       const updatedClient = await Client.findByIdAndUpdate(id, payload).exec();

@@ -47,20 +47,23 @@ function userServices() {
       return user;
     },
     updateUser: async (payload) => {
-      const { id, username, roles, active, password } = payload;
+      let { id, active, password } = payload;
 
-      const userToUpdate = await User.findById(id);
+      const [userToUpdate, note] = await Promise.all([
+        User.findById(id).lean(),
+        Note.findOne({ user: id }).lean(),
+      ]);
+
+      console.log(userToUpdate);
 
       if (!userToUpdate) throw new NotFoundError(messageResponses.NOT_FOUND);
 
-      userToUpdate.username = username;
-      userToUpdate.roles = roles;
-      userToUpdate.active = active;
+      if (note && !active)
+        throw new ConflictError(messageResponses.USER_HAS_ASSIGNED_NOTES);
 
-      if (password)
-        userToUpdate.password = await cryptography.hashPassword(password);
+      if (password) password = await cryptography.hashPassword(password);
 
-      const updatedUser = await userToUpdate.save();
+      const updatedUser = await User.findByIdAndUpdate(id, payload);
 
       return updatedUser;
     },
