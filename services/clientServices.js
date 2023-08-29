@@ -52,7 +52,7 @@ function clientServices() {
 
       if (!client) throw new NotFoundError(messageResponses.NOT_FOUND);
 
-      if (note)
+      if (note && !client.active)
         throw new ConflictError(messageResponses.CLIENT_HAS_ASSIGNED_NOTES);
 
       if (duplicateID && duplicateID?._id.toString() !== id)
