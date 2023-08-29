@@ -44,7 +44,9 @@ const errorHandler = (error, req, res, next) => {
   ) {
     res.status(statusCodes.FORBIDDEN).json(error);
   } else {
-    res.status(statusCodes.SERVER_ERROR).send(messageResponses.SERVER_ERROR);
+    res
+      .status(statusCodes.SERVER_ERROR)
+      .json({ message: messageResponses.SERVER_ERROR });
   }
 };
 
