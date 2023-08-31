@@ -3,6 +3,7 @@ const asyncHandler = require('express-async-handler');
 const noteServices = require('../services/noteServices');
 const { BadRequestError } = require('../validation/errors');
 const { statusCodes, messageResponses } = require('../constants/responses');
+const queryParser = require('../constants/queryParser');
 
 const note = noteServices();
 
@@ -10,7 +11,7 @@ const note = noteServices();
 // @route GET /notes
 // @access Private
 const getAllNotes = asyncHandler(async (req, res) => {
-  const notes = await note.getNotes();
+  const notes = await note.getNotes(req.query);
 
   res.json(notes);
 });

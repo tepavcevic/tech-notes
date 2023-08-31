@@ -10,8 +10,29 @@ const { messageResponses } = require('../constants/responses');
 
 function noteServices() {
   return {
-    getNotes: async () => {
-      const notes = await Note.find().lean();
+    getNotes: async (queryParams) => {
+      const { sortBy, order, limit = 10, page = 1, filter } = queryParams;
+
+      const skip = (page - 1) * limit;
+      let query = Note.find();
+
+      if (filter)
+        filter === 'open'
+          ? (query = query.find({ completed: false }))
+          : (query = query.find({ completed: true }));
+
+      if (sortBy) {
+        const sortOptions = {};
+        sortOptions[sortBy] = order === 'desc' ? -1 : 1;
+        query = query.sort(sortOptions);
+      }
+
+      const totalCount = await Note.countDocuments(query);
+
+      query = query.skip(skip).limit(limit);
+
+      const notes = await query.lean().exec();
+
       if (!notes?.length) return res.status(statusCodes.NO_CONTENT).json([]);
 
       const notesWithUserAndClient = await Promise.all(
@@ -26,7 +47,12 @@ function noteServices() {
         })
       );
 
-      return notesWithUserAndClient;
+      return {
+        notes: notesWithUserAndClient,
+        totalCount,
+        currentPage: page,
+        totalPages: Math.ceil(totalCount / limit),
+      };
     },
     createNote: async (payload) => {
       const { user: userId, title, text, client: clientId } = payload;
