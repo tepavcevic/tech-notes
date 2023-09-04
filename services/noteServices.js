@@ -16,7 +16,7 @@ function noteServices() {
       const skip = (page - 1) * limit;
       let query = Note.find();
 
-      if (filter)
+      if (filter && filter !== 'all')
         filter === 'open'
           ? (query = query.find({ completed: false }))
           : (query = query.find({ completed: true }));
@@ -28,12 +28,11 @@ function noteServices() {
       }
 
       const totalCount = await Note.countDocuments(query);
+      if (!totalCount) throw new NotFoundError(messageResponses.NOT_FOUND);
 
       query = query.skip(skip).limit(limit);
 
       const notes = await query.lean().exec();
-
-      if (!notes?.length) return res.status(statusCodes.NO_CONTENT).json([]);
 
       const notesWithUserAndClient = await Promise.all(
         notes.map(async (note) => {
@@ -79,10 +78,10 @@ function noteServices() {
 
       return newNote;
     },
-    findNoteById: async (id) => {
-      const note = await Note.findById(id).lean();
+    findNoteById: async (payload) => {
+      const { id } = payload;
 
-      console.log(note);
+      const note = await Note.findById(id).lean();
 
       if (!note) throw new NotFoundError(messageResponses.NOT_FOUND);
 

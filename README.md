@@ -20,7 +20,7 @@ Project uses:
 
 Features in development / still not implemented
 
-- quering data through URL (filtering and sorting)
+- quering data through URL (filtering and sorting) (in progress for notes, not implemented for users and clients)
 - quering users and clients through URL by name when assigning a new note
 - unit tests as system verification
 
@@ -50,6 +50,8 @@ npm install
 ```npm
 npm run dev
 ```
+
+For successfull run and installation You need to setup an instance of MongoDB
 
 ## Credits
 
