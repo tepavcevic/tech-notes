@@ -18,4 +18,6 @@ router
   .patch(validateDTO(updateNoteSchemaAjv), notesController.updateNote)
   .delete(notesController.deleteNote);
 
+router.route('/:id').get(notesController.getNoteById);
+
 module.exports = router;

@@ -82,10 +82,19 @@ function noteServices() {
       const { id } = payload;
 
       const note = await Note.findById(id).lean();
-
       if (!note) throw new NotFoundError(messageResponses.NOT_FOUND);
+      console.log(note);
 
-      return note;
+      const [userNote, clientNote] = await Promise.all([
+        User.findById(note.user),
+        Client.findById(note.client),
+      ]);
+
+      return {
+        ...note,
+        username: userNote.username,
+        clientMetadata: clientNote,
+      };
     },
     updateNote: async (payload) => {
       const { id, ...data } = payload;

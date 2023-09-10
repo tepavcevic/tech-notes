@@ -3,7 +3,6 @@ const asyncHandler = require('express-async-handler');
 const noteServices = require('../services/noteServices');
 const { BadRequestError } = require('../validation/errors');
 const { statusCodes, messageResponses } = require('../constants/responses');
-const queryParser = require('../constants/queryParser');
 
 const note = noteServices();
 
@@ -49,4 +48,19 @@ const deleteNote = asyncHandler(async (req, res) => {
   res.json(`${noteToDelete.title} ${messageResponses.DELETED}`);
 });
 
-module.exports = { getAllNotes, createNewNote, updateNote, deleteNote };
+// @desc Get a note
+// @route GET /notes/:id
+// @access Private
+const getNoteById = asyncHandler(async (req, res) => {
+  const foundNote = await note.findNoteById(req.params);
+
+  res.json(foundNote);
+});
+
+module.exports = {
+  getAllNotes,
+  createNewNote,
+  updateNote,
+  deleteNote,
+  getNoteById,
+};
