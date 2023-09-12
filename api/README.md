@@ -45,6 +45,15 @@ Features in development / still not implemented
 npm install
 ```
 
+Environment variables
+
+```env
+NODE_ENV=development
+DATABASE_URI=...
+ACCESS_TOKEN_SECRET=...
+REFRESH_TOKEN_SECRET=...
+```
+
 ## Run instruction
 
 ```npm
